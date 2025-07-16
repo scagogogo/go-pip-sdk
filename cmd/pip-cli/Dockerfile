@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o pip-cli ./cmd/pip-cli
 
 # Runtime stage
-FROM python:3.11-alpine
+FROM python:3.13-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
