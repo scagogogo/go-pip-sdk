@@ -395,34 +395,6 @@ func TestInstallIntegration(t *testing.T) {
 	t.Log("Pip installation successful")
 }
 
-// Benchmark tests
-func BenchmarkIsInstalled(b *testing.B) {
-	manager := NewManager(nil)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = manager.IsInstalled()
-	}
-}
-
-func BenchmarkFindPipExecutable(b *testing.B) {
-	manager := NewManager(nil)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = manager.findPipExecutable()
-	}
-}
-
-func BenchmarkFindPythonExecutable(b *testing.B) {
-	manager := NewManager(nil)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = manager.findPythonExecutable()
-	}
-}
-
 func TestInstall(t *testing.T) {
 	manager := NewManager(nil)
 
