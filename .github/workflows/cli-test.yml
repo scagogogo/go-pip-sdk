@@ -1,0 +1,195 @@
+name: CLI Tool Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'cmd/pip-cli/**'
+      - 'pkg/**'
+      - 'examples/cli/**'
+      - '.github/workflows/cli-test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'cmd/pip-cli/**'
+      - 'pkg/**'
+      - 'examples/cli/**'
+
+jobs:
+  test-cli:
+    name: Test CLI Tool
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install virtualenv
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download Go dependencies
+      run: go mod download
+
+    - name: Build CLI tool
+      run: make build
+
+    - name: Test CLI version command
+      run: ./bin/pip-cli version
+
+    - name: Test CLI help command
+      run: ./bin/pip-cli help
+
+    - name: Test CLI list command
+      run: ./bin/pip-cli list
+
+    - name: Test package installation (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        ./bin/pip-cli install requests
+        ./bin/pip-cli show requests
+        ./bin/pip-cli uninstall requests
+
+    - name: Test package installation (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .\bin\pip-cli.exe install requests
+        .\bin\pip-cli.exe show requests
+        .\bin\pip-cli.exe uninstall requests
+
+    - name: Test virtual environment operations (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        TEMP_VENV=$(mktemp -d)/test-venv
+        ./bin/pip-cli venv create "$TEMP_VENV"
+        ./bin/pip-cli venv info "$TEMP_VENV"
+        ./bin/pip-cli venv activate "$TEMP_VENV"
+        ./bin/pip-cli install click
+        ./bin/pip-cli list
+        ./bin/pip-cli venv deactivate
+        ./bin/pip-cli venv remove "$TEMP_VENV"
+
+    - name: Test virtual environment operations (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $tempVenv = Join-Path $env:TEMP "test-venv"
+        .\bin\pip-cli.exe venv create $tempVenv
+        .\bin\pip-cli.exe venv info $tempVenv
+        .\bin\pip-cli.exe venv activate $tempVenv
+        .\bin\pip-cli.exe install click
+        .\bin\pip-cli.exe list
+        .\bin\pip-cli.exe venv deactivate
+        .\bin\pip-cli.exe venv remove $tempVenv
+
+    - name: Test project initialization (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        TEMP_PROJECT=$(mktemp -d)/test-project
+        ./bin/pip-cli project init "$TEMP_PROJECT"
+        ls -la "$TEMP_PROJECT"
+        test -f "$TEMP_PROJECT/setup.py"
+        test -f "$TEMP_PROJECT/pyproject.toml"
+        test -f "$TEMP_PROJECT/requirements.txt"
+
+    - name: Test project initialization (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $tempProject = Join-Path $env:TEMP "test-project"
+        .\bin\pip-cli.exe project init $tempProject
+        Get-ChildItem $tempProject
+        Test-Path "$tempProject\setup.py"
+        Test-Path "$tempProject\pyproject.toml"
+        Test-Path "$tempProject\requirements.txt"
+
+  test-cli-examples:
+    name: Test CLI Examples
+    runs-on: ubuntu-latest
+    needs: test-cli
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install virtualenv
+
+    - name: Make example scripts executable
+      run: chmod +x examples/cli/*.sh
+
+    - name: Run basic usage example
+      run: ./examples/cli/basic-usage.sh
+
+    - name: Run virtual environment workflow example
+      run: ./examples/cli/venv-workflow.sh
+
+    - name: Run project setup example
+      run: ./examples/cli/project-setup.sh
+
+  build-cross-platform:
+    name: Cross-Platform Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Build for all platforms
+      run: make build-all
+
+    - name: Upload Linux binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: pip-cli-linux-amd64
+        path: bin/pip-cli-linux-amd64
+
+    - name: Upload Windows binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: pip-cli-windows-amd64
+        path: bin/pip-cli-windows-amd64.exe
+
+    - name: Upload macOS binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: pip-cli-darwin-amd64
+        path: bin/pip-cli-darwin-amd64
