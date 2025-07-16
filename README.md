@@ -19,6 +19,8 @@ English | [简体中文](README.zh-CN.md)
 - 📝 **Comprehensive logging** - Detailed operation logs with multiple levels
 - ⚡ **Error handling** - Rich error types with helpful suggestions
 - 🧪 **Well tested** - Extensive unit and integration tests
+- 🖥️ **Command-line interface** - Full-featured CLI tool for direct usage
+- 🐳 **Docker support** - Containerized deployment options
 
 ## Installation
 
@@ -198,6 +200,52 @@ ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 defer cancel()
 
 manager := pip.NewManagerWithContext(ctx, nil)
+```
+
+## Command-Line Interface
+
+The SDK includes a full-featured CLI tool for direct usage:
+
+### Installation
+
+```bash
+# Using Go install
+go install github.com/scagogogo/go-pip-sdk/cmd/pip-cli@latest
+
+# Or build from source
+git clone https://github.com/scagogogo/go-pip-sdk.git
+cd go-pip-sdk
+make build
+```
+
+### Usage
+
+```bash
+# Install packages
+pip-cli install requests
+pip-cli install "django>=4.0,<5.0"
+
+# Manage virtual environments
+pip-cli venv create ./myenv
+pip-cli venv activate ./myenv
+pip-cli venv deactivate
+
+# Initialize projects
+pip-cli project init ./myproject
+
+# Get help
+pip-cli help
+```
+
+### Docker Usage
+
+```bash
+# Run with Docker
+docker run --rm scagogogo/pip-cli:latest help
+
+# Use Docker Compose for development
+cd cmd/pip-cli
+docker-compose up pip-cli-dev
 ```
 
 ## Documentation
