@@ -3,8 +3,11 @@
 [![Go Version](https://img.shields.io/badge/go-%3E%3D1.19-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/scagogogo/go-pip-sdk)](https://goreportcard.com/report/github.com/scagogogo/go-pip-sdk)
+[![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://scagogogo.github.io/go-pip-sdk/)
 
 A comprehensive Go SDK for managing Python pip operations, virtual environments, and Python projects. This library provides a clean, type-safe interface for all common pip operations with cross-platform support.
+
+English | [简体中文](README.zh-CN.md)
 
 ## Features
 
@@ -197,6 +200,13 @@ defer cancel()
 manager := pip.NewManagerWithContext(ctx, nil)
 ```
 
+## Documentation
+
+- 📖 **[Online Documentation](https://scagogogo.github.io/go-pip-sdk/)** - Complete API documentation and guides
+- 🚀 **[Getting Started](https://scagogogo.github.io/go-pip-sdk/guide/getting-started)** - Quick start guide
+- 📚 **[API Reference](https://scagogogo.github.io/go-pip-sdk/api/)** - Detailed API documentation
+- 💡 **[Examples](https://scagogogo.github.io/go-pip-sdk/examples/)** - Code examples and use cases
+
 ## Examples
 
 See the [examples](examples/) directory for more comprehensive examples:
@@ -270,6 +280,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📖 [Documentation](docs/)
+- 📖 [Documentation](https://scagogogo.github.io/go-pip-sdk/)
 - 🐛 [Issue Tracker](https://github.com/scagogogo/go-pip-sdk/issues)
 - 💬 [Discussions](https://github.com/scagogogo/go-pip-sdk/discussions)
