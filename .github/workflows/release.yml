@@ -98,7 +98,7 @@ jobs:
           -o dist/pip-cli-${{ matrix.suffix }} ./cmd/pip-cli
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pip-cli-${{ matrix.suffix }}
         path: dist/pip-cli-${{ matrix.suffix }}
@@ -112,7 +112,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: dist
 

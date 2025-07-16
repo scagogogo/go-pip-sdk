@@ -44,7 +44,7 @@ jobs:
         pip install virtualenv
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -192,19 +192,19 @@ jobs:
       run: make build-all
 
     - name: Upload Linux binary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pip-cli-linux-amd64
         path: bin/pip-cli-linux-amd64
 
     - name: Upload Windows binary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pip-cli-windows-amd64
         path: bin/pip-cli-windows-amd64.exe
 
     - name: Upload macOS binary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pip-cli-darwin-amd64
         path: bin/pip-cli-darwin-amd64
