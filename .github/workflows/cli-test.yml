@@ -55,16 +55,31 @@ jobs:
       run: go mod download
 
     - name: Build CLI tool
-      run: make build
+      run: make build-current
 
-    - name: Test CLI version command
+    - name: Test CLI version command (Unix)
+      if: runner.os != 'Windows'
       run: ./bin/pip-cli version
 
-    - name: Test CLI help command
+    - name: Test CLI version command (Windows)
+      if: runner.os == 'Windows'
+      run: .\bin\pip-cli.exe version
+
+    - name: Test CLI help command (Unix)
+      if: runner.os != 'Windows'
       run: ./bin/pip-cli help
 
-    - name: Test CLI list command
+    - name: Test CLI help command (Windows)
+      if: runner.os == 'Windows'
+      run: .\bin\pip-cli.exe help
+
+    - name: Test CLI list command (Unix)
+      if: runner.os != 'Windows'
       run: ./bin/pip-cli list
+
+    - name: Test CLI list command (Windows)
+      if: runner.os == 'Windows'
+      run: .\bin\pip-cli.exe list
 
     - name: Test package installation (Unix)
       if: runner.os != 'Windows'

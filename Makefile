@@ -7,6 +7,30 @@ PKG_PATH=./pkg/...
 COVERAGE_FILE=coverage.out
 COVERAGE_HTML=coverage.html
 
+# Detect OS and set binary extension
+# Check for Windows (including GitHub Actions Windows runners)
+ifeq ($(OS),Windows_NT)
+    BINARY_EXT=.exe
+    DETECTED_OS=Windows
+else
+    # Check for PowerShell environment (GitHub Actions Windows)
+    ifdef PSModulePath
+        BINARY_EXT=.exe
+        DETECTED_OS=Windows
+    else
+        BINARY_EXT=
+        UNAME_S := $(shell uname -s)
+        ifeq ($(UNAME_S),Linux)
+            DETECTED_OS=Linux
+        endif
+        ifeq ($(UNAME_S),Darwin)
+            DETECTED_OS=macOS
+        endif
+    endif
+endif
+
+BINARY_WITH_EXT=$(BINARY_NAME)$(BINARY_EXT)
+
 # Go parameters
 GOCMD=go
 GOBUILD=$(GOCMD) build
@@ -21,16 +45,27 @@ GOVET=$(GOCMD) vet
 BUILD_FLAGS=-ldflags="-s -w"
 TEST_FLAGS=-v -race
 
-.PHONY: all build clean test test-coverage test-integration lint fmt vet deps help
+.PHONY: all build build-current clean test test-coverage test-integration lint fmt vet deps help
 
 # Default target
 all: clean fmt vet test build
 
 # Build the binary
 build:
-	@echo "Building $(BINARY_NAME)..."
+	@echo "Building $(BINARY_WITH_EXT) for $(DETECTED_OS)..."
+	$(GOBUILD) $(BUILD_FLAGS) -o bin/$(BINARY_WITH_EXT) $(PACKAGE_PATH)
+	@echo "Binary built: bin/$(BINARY_WITH_EXT)"
+
+# Build for current platform with explicit extension detection
+build-current:
+	@echo "Building for current platform..."
+ifeq ($(shell go env GOOS),windows)
+	$(GOBUILD) $(BUILD_FLAGS) -o bin/$(BINARY_NAME).exe $(PACKAGE_PATH)
+	@echo "Binary built: bin/$(BINARY_NAME).exe"
+else
 	$(GOBUILD) $(BUILD_FLAGS) -o bin/$(BINARY_NAME) $(PACKAGE_PATH)
 	@echo "Binary built: bin/$(BINARY_NAME)"
+endif
 
 # Build for multiple platforms
 build-all: build-linux build-windows build-darwin
@@ -103,13 +138,13 @@ deps:
 
 # Install the binary
 install: build
-	@echo "Installing $(BINARY_NAME)..."
-	cp bin/$(BINARY_NAME) $(GOPATH)/bin/
+	@echo "Installing $(BINARY_WITH_EXT)..."
+	cp bin/$(BINARY_WITH_EXT) $(GOPATH)/bin/
 
 # Run the CLI tool
 run: build
-	@echo "Running $(BINARY_NAME)..."
-	./bin/$(BINARY_NAME) $(ARGS)
+	@echo "Running $(BINARY_WITH_EXT)..."
+	./bin/$(BINARY_WITH_EXT) $(ARGS)
 
 # Run examples
 run-basic-example:
