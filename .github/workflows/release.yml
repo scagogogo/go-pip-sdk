@@ -1,0 +1,255 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install virtualenv
+
+    - name: Run tests
+      run: make test
+
+    - name: Run linting
+      run: make lint
+
+  build:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+          - goos: windows
+            goarch: amd64
+            suffix: windows-amd64.exe
+          - goos: windows
+            goarch: arm64
+            suffix: windows-arm64.exe
+          - goos: darwin
+            goarch: amd64
+            suffix: darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            suffix: darwin-arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        mkdir -p dist
+        go build -ldflags="-s -w -X main.version=${{ steps.version.outputs.version }}" \
+          -o dist/pip-cli-${{ matrix.suffix }} ./cmd/pip-cli
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: pip-cli-${{ matrix.suffix }}
+        path: dist/pip-cli-${{ matrix.suffix }}
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: dist
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Prepare release assets
+      run: |
+        mkdir -p release
+        find dist -name "pip-cli-*" -type f -exec cp {} release/ \;
+        ls -la release/
+
+    - name: Generate checksums
+      run: |
+        cd release
+        sha256sum * > checksums.txt
+        cat checksums.txt
+
+    - name: Create release notes
+      run: |
+        cat > release-notes.md << 'EOF'
+        # Go Pip SDK CLI ${{ steps.version.outputs.version }}
+
+        ## What's New
+
+        This release includes the pip-cli command-line tool for managing Python packages, virtual environments, and projects.
+
+        ## Features
+
+        - 📦 **Package Management**: Install, uninstall, list, and show Python packages
+        - 🐍 **Virtual Environments**: Create, activate, deactivate, and manage virtual environments
+        - 🏗️ **Project Initialization**: Bootstrap new Python projects with proper structure
+        - 🔧 **Cross-Platform**: Works on Linux, Windows, and macOS
+        - 📝 **Comprehensive Logging**: Verbose mode for detailed operation tracking
+
+        ## Installation
+
+        ### Download Binary
+
+        Download the appropriate binary for your platform from the assets below.
+
+        ### Using Go Install
+
+        ```bash
+        go install github.com/scagogogo/go-pip-sdk/cmd/pip-cli@${{ steps.version.outputs.version }}
+        ```
+
+        ### Build from Source
+
+        ```bash
+        git clone https://github.com/scagogogo/go-pip-sdk.git
+        cd go-pip-sdk
+        make build
+        ```
+
+        ## Usage
+
+        ```bash
+        # Install a package
+        pip-cli install requests
+
+        # Create virtual environment
+        pip-cli venv create ./myenv
+
+        # Initialize new project
+        pip-cli project init ./myproject
+
+        # Get help
+        pip-cli help
+        ```
+
+        ## Supported Platforms
+
+        - Linux (amd64, arm64)
+        - Windows (amd64, arm64)
+        - macOS (amd64, arm64)
+
+        ## Checksums
+
+        See `checksums.txt` for SHA256 checksums of all binaries.
+        EOF
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Release ${{ steps.version.outputs.version }}
+        body_path: release-notes.md
+        files: |
+          release/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./cmd/pip-cli/Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          scagogogo/pip-cli:latest
+          scagogogo/pip-cli:${{ steps.version.outputs.version }}
+        platforms: linux/amd64,linux/arm64
+        build-args: |
+          VERSION=${{ steps.version.outputs.version }}

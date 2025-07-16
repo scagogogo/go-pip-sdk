@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  pip-cli:
+    build:
+      context: ../..
+      dockerfile: cmd/pip-cli/Dockerfile
+      args:
+        VERSION: latest
+    image: scagogogo/pip-cli:latest
+    container_name: pip-cli
+    volumes:
+      # Mount workspace for persistent data
+      - ./workspace:/app/workspace
+      # Mount host pip cache (optional)
+      - pip-cache:/root/.cache/pip
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PIP_NO_CACHE_DIR=0
+      - PIP_CACHE_DIR=/root/.cache/pip
+    working_dir: /app/workspace
+    # Override default command for interactive use
+    command: ["help"]
+    
+  # Development environment with mounted source code
+  pip-cli-dev:
+    build:
+      context: ../..
+      dockerfile: cmd/pip-cli/Dockerfile
+      args:
+        VERSION: dev
+    image: scagogogo/pip-cli:dev
+    container_name: pip-cli-dev
+    volumes:
+      - ./workspace:/app/workspace
+      - ../../:/app/src:ro  # Mount source code read-only
+      - pip-cache:/root/.cache/pip
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PIP_NO_CACHE_DIR=0
+      - PIP_CACHE_DIR=/root/.cache/pip
+    working_dir: /app/workspace
+    command: ["help"]
+
+volumes:
+  pip-cache:
+    driver: local
