@@ -1,6 +1,7 @@
 {
   "name": "go-pip-sdk-docs",
   "version": "1.0.0",
+  "type": "module",
   "description": "Documentation for Go Pip SDK",
   "scripts": {
     "docs:dev": "vitepress dev",

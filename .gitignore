@@ -61,6 +61,9 @@ test-reports/
 
 # Documentation build
 docs/_build/
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 # Python artifacts (for testing)
 __pycache__/
