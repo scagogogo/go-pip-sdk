@@ -39,6 +39,7 @@ Global Options:
 
 Examples:
   pip-cli install requests
+  pip-cli install requests click flask
   pip-cli install "requests>=2.25.0"
   pip-cli venv create ./myenv
   pip-cli project init ./myproject
@@ -129,36 +130,105 @@ func main() {
 	}
 }
 
+// isVersionSpec checks if a string looks like a version specification
+func isVersionSpec(s string) bool {
+	// Check for version operators
+	versionOperators := []string{">=", "==", "!=", "<=", "~=", "===", ">", "<"}
+	for _, op := range versionOperators {
+		if strings.Contains(s, op) {
+			return true
+		}
+	}
+
+	// Check if it starts with a digit and contains dots (like "2.25.0")
+	if len(s) > 0 && s[0] >= '0' && s[0] <= '9' && strings.Contains(s, ".") {
+		return true
+	}
+
+	// Check for version ranges with commas
+	if strings.Contains(s, ",") {
+		return true
+	}
+
+	return false
+}
+
 func handleInstall(manager pip.PipManager, args []string) {
 	if len(args) == 0 {
 		fmt.Fprintf(os.Stderr, "Error: package name required\n")
-		fmt.Fprintf(os.Stderr, "Usage: pip-cli install <package> [version]\n")
+		fmt.Fprintf(os.Stderr, "Usage: pip-cli install <package1> [package2] ...\n")
+		fmt.Fprintf(os.Stderr, "       pip-cli install <package> <version>\n")
 		os.Exit(1)
 	}
 
-	packageName := args[0]
-	var version string
-	if len(args) > 1 {
-		version = args[1]
+	// Handle multiple packages or single package with version
+	var packages []*pip.PackageSpec
+
+	if len(args) == 2 && isVersionSpec(args[1]) {
+		// Package + version format: pip-cli install requests ">=2.25.0"
+		pkg := &pip.PackageSpec{
+			Name:    args[0],
+			Version: args[1],
+		}
+		packages = append(packages, pkg)
+	} else {
+		// Multiple packages: pip-cli install requests click flask
+		for _, packageName := range args {
+			if packageName == "" {
+				continue
+			}
+			pkg := &pip.PackageSpec{
+				Name: packageName,
+			}
+			packages = append(packages, pkg)
+		}
 	}
 
-	pkg := &pip.PackageSpec{
-		Name:    packageName,
-		Version: version,
+	if len(packages) == 1 {
+		versionStr := ""
+		if packages[0].Version != "" {
+			versionStr = packages[0].Version
+		}
+		fmt.Printf("Installing %s%s...\n", packages[0].Name, versionStr)
+	} else {
+		packageNames := make([]string, len(packages))
+		for i, pkg := range packages {
+			packageNames[i] = pkg.Name
+		}
+		fmt.Printf("Installing %d packages: %s...\n", len(packages), strings.Join(packageNames, ", "))
 	}
-
-	fmt.Printf("Installing %s%s...\n", pkg.Name, pkg.Version)
 
 	start := time.Now()
-	err := manager.InstallPackage(pkg)
+	var errors []string
+	successCount := 0
+
+	for _, pkg := range packages {
+		err := manager.InstallPackage(pkg)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %v", pkg.Name, err))
+		} else {
+			successCount++
+		}
+	}
+
 	duration := time.Since(start)
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Installation failed: %v\n", err)
+	if len(errors) > 0 {
+		if successCount > 0 {
+			fmt.Printf("✓ %d packages installed successfully\n", successCount)
+		}
+		fmt.Fprintf(os.Stderr, "Installation failed for %d packages:\n", len(errors))
+		for _, errMsg := range errors {
+			fmt.Fprintf(os.Stderr, "  - %s\n", errMsg)
+		}
 		os.Exit(1)
 	}
 
-	fmt.Printf("✓ Package %s installed successfully (took %v)\n", pkg.Name, duration)
+	if len(packages) == 1 {
+		fmt.Printf("✓ Package %s installed successfully (took %v)\n", packages[0].Name, duration)
+	} else {
+		fmt.Printf("✓ All %d packages installed successfully (took %v)\n", len(packages), duration)
+	}
 }
 
 func handleUninstall(manager pip.PipManager, args []string) {
@@ -417,10 +487,12 @@ func handleHelp(args []string) {
 	command := args[0]
 	switch command {
 	case "install":
-		fmt.Println("Install a Python package")
-		fmt.Println("Usage: pip-cli install <package> [version]")
+		fmt.Println("Install Python packages")
+		fmt.Println("Usage: pip-cli install <package1> [package2] ...")
+		fmt.Println("       pip-cli install <package> <version>")
 		fmt.Println("Examples:")
 		fmt.Println("  pip-cli install requests")
+		fmt.Println("  pip-cli install requests click flask")
 		fmt.Println("  pip-cli install requests '>=2.25.0'")
 	case "uninstall":
 		fmt.Println("Uninstall a Python package")
