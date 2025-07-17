@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Go Pip SDK"
   text: "Python Package Management in Go"
-  tagline: A comprehensive Go SDK for managing Python pip operations, virtual environments, and Python projects
+  tagline: A comprehensive Go SDK for managing Python pip operations, virtual environments, and Python projects with CLI support
   image:
     src: /logo.svg
     alt: Go Pip SDK
