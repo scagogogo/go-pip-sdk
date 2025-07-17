@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/go-pip-sdk/',
   title: 'Go Pip SDK',
   description: 'A comprehensive Go SDK for managing Python pip operations, virtual environments, and Python projects',
   
