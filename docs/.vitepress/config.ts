@@ -31,7 +31,8 @@ export default defineConfig({
                 { text: 'Virtual Environments', link: '/guide/virtual-environments' },
                 { text: 'Project Management', link: '/guide/project-management' },
                 { text: 'Error Handling', link: '/guide/error-handling' },
-                { text: 'Logging', link: '/guide/logging' }
+                { text: 'Logging', link: '/guide/logging' },
+                { text: 'Contributing', link: '/guide/contributing' }
               ]
             }
           ],
@@ -99,7 +100,8 @@ export default defineConfig({
                 { text: '虚拟环境', link: '/zh/guide/virtual-environments' },
                 { text: '项目管理', link: '/zh/guide/project-management' },
                 { text: '错误处理', link: '/zh/guide/error-handling' },
-                { text: '日志记录', link: '/zh/guide/logging' }
+                { text: '日志记录', link: '/zh/guide/logging' },
+                { text: '贡献指南', link: '/zh/guide/contributing' }
               ]
             }
           ],
